@@ -1,0 +1,13 @@
+backend:
+  image: ghcr.io/musharraf1128/hey-appoint-backend
+  tag: latest
+  replicas: 2
+  port: 8000
+
+frontend:
+  image: ghcr.io/musharraf1128/hey-appoint-frontend
+  tag: latest
+  replicas: 1
+  port: 80
+
+host: appoint.local

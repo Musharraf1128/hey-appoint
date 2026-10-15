@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: appoint-postgres-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appoint-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: appoint-postgres
+  template:
+    metadata:
+      labels:
+        app: appoint-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: clinic
+            - name: POSTGRES_USER
+              value: clinic
+            - name: POSTGRES_PASSWORD
+              value: clinic
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: appoint-postgres-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: appoint-postgres
+spec:
+  type: ClusterIP
+  selector:
+    app: appoint-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

@@ -1,0 +1,17 @@
+# Demo bug 2: selector matches no pods, endpoints go <none>.
+# kubectl apply -f troubleshooting/broken-service.yaml
+# Watch: kubectl get endpoints appoint-backend -n appoint  -> <none>
+# Fix: kubectl apply -f helm/appoint/templates/backend-service.yaml --dry-run=client -o yaml | kubectl replace -f -
+# (Easier: helm upgrade --install appoint ./helm/appoint -n appoint)
+apiVersion: v1
+kind: Service
+metadata:
+  name: appoint-backend
+  namespace: appoint
+spec:
+  type: ClusterIP
+  selector:
+    app: does-not-exist
+  ports:
+    - port: 80
+      targetPort: 8000

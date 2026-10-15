@@ -1,0 +1,101 @@
+name: HeyAppoint CI/CD
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+env:
+  REGISTRY: ghcr.io
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Install backend dependencies
+        run: pip install -r requirements.txt
+        working-directory: backend
+      - name: Run backend tests
+        run: pytest -q
+        working-directory: backend
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Build frontend
+        run: npm install && npm run build
+        working-directory: frontend
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for leaked secrets
+        run: |
+          echo "Scanning repository for leaked secrets..."
+          if rg -i -l 'aws_secret|aws_access|ghp_[A-Za-z0-9]{36}|xox[bap]-|-----BEGIN (RSA )?PRIVATE KEY-----' . | grep -q .; then
+            echo "Possible secret found."
+            exit 1
+          else
+            echo "No secrets found."
+          fi
+  build-scan-push:
+    needs: [test, secret-scan]
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build images
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/hey-appoint-backend:${{ github.sha }} ./backend
+          docker build -t ghcr.io/${{ github.repository_owner }}/hey-appoint-frontend:${{ github.sha }} ./frontend
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/hey-appoint-backend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/hey-appoint-frontend:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+      - name: Push images
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/hey-appoint-backend:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository_owner }}/hey-appoint-frontend:${{ github.sha }}
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build-scan-push
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: read}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1.10.0
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install appoint ./helm/appoint -n appoint --create-namespace \
+            --set backend.tag=${{ github.sha }} \
+            --set frontend.tag=${{ github.sha }} \
+            --set backend.image=ghcr.io/${{ github.repository_owner }}/hey-appoint-backend \
+            --set frontend.image=ghcr.io/${{ github.repository_owner }}/hey-appoint-frontend
+      - name: Check rollout
+        run: |
+          kubectl rollout status deployment/appoint-backend -n appoint --timeout=120s
+          kubectl get pods -n appoint
+      - name: Verify API in CI
+        run: |
+          kubectl port-forward service/appoint-backend -n appoint 8000:80 &
+          sleep 5
+          curl -s http://localhost:8000/health
+          curl -s http://localhost:8000/api/doctors | head -c 200

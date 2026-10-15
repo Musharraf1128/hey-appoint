@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: appoint-frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: appoint-frontend
+  ports:
+    - port: 80
+      targetPort: {{ .Values.frontend.port }}
