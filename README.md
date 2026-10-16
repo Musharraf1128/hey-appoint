@@ -1,126 +1,198 @@
-# HeyAppoint Clinic — DevOps Final Capstone
+# HeyAppoint Clinic
 
-Clinic appointment booking, built end-to-end: FastAPI + PostgreSQL backend,
-React frontend, CI/CD with security scanning, Terraform infrastructure on AWS,
-and Helm deployment on Kubernetes. Dark-green clinic UI, designed from scratch.
+An end-to-end clinic appointment platform built to demonstrate a practical DevOps delivery workflow. Patients can book appointments with available doctors, while clinic staff can confirm or cancel bookings from a responsive dashboard.
 
-## Demo Walkthrough
+[![CI/CD](https://github.com/Musharraf1128/hey-appoint/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Musharraf1128/hey-appoint/actions/workflows/ci-cd.yml)
 
-<!-- TODO: after recording, replace VIDEO_ID below with your YouTube video ID -->
-[![HeyAppoint demo walkthrough](https://img.youtube.com/vi/VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+## Demo
 
-*Live end-to-end demo: booking flow → green pipeline → Terraform apply →
-app running on AWS → troubleshooting finale.*
+> Add the recorded walkthrough after publishing it:
+> `https://www.youtube.com/watch?v=VIDEO_ID`
 
-## What It Does
+[![Watch the HeyAppoint demo](https://img.youtube.com/vi/VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
 
-Patients pick a doctor, choose a date and time slot, and book. Double
-booking the same doctor/slot is rejected with `409`. Staff confirm or
-cancel visits from the dashboard, which also shows live counts.
+## Highlights
 
-| Method | Route | Purpose |
-| --- | --- | --- |
-| GET | `/health`, `/ready` | Liveness / readiness probes |
-| GET | `/api/doctors` | List doctors |
-| GET | `/api/appointments` | List visits |
-| POST | `/api/appointments` | Book a visit |
-| PUT | `/api/appointments/{id}` | Confirm a visit |
-| DELETE | `/api/appointments/{id}` | Cancel a visit |
-| GET | `/api/stats` | Dashboard counts |
-| GET | `/metrics` | Prometheus metrics |
+- Book, confirm, and cancel clinic appointments through a React dashboard.
+- Prevent duplicate doctor, date, and time-slot bookings with an API-level `409 Conflict` response.
+- Run the complete application locally with Docker Compose.
+- Build, test, scan, publish, and validate deployments through GitHub Actions.
+- Deploy the services to Kubernetes with Helm, including health probes, an Ingress, and backend autoscaling.
+- Expose Prometheus-compatible metrics and include reproducible troubleshooting scenarios.
+- Provision a disposable AWS demo environment using Terraform.
 
-## Tech Stack
-
-| Layer | Choice |
-| --- | --- |
-| Backend | FastAPI, SQLAlchemy, Alembic, Pydantic |
-| Frontend | React + Vite, plain CSS |
-| Database | PostgreSQL 16 |
-| Containers | Docker, multi-stage frontend build |
-| Registry | GitHub Container Registry (GHCR) |
-| CI/CD | GitHub Actions |
-| Security | CodeQL (SAST), pip-audit (SCA), secret scan, Trivy image scan |
-| Infrastructure | Terraform (VPC + EC2 on AWS) |
-| Orchestration | k3s + Helm |
-| Routing / scaling | Ingress, HPA |
-| Observability | Prometheus metrics, Grafana |
-
-## Repository Layout
+## Architecture
 
 ```text
-hey-appoint/
-├── backend/            # FastAPI app, Alembic migrations, pytest suite
-├── frontend/           # React + Vite clinic UI, Nginx serve
-├── helm/appoint/       # backend + frontend + postgres + ingress + HPA
-├── k8s/                # namespace bootstrap
-├── terraform/          # VPC, subnet, gateway, security group, k3s EC2
-├── monitoring/         # Prometheus scrape config
-├── troubleshooting/    # broken manifests for the live debug finale
-├── scripts/            # load-test helper for HPA
-├── docker-compose.yml  # full local stack
-└── .github/workflows/  # ci-cd.yml pipeline
+Browser
+   │
+   ▼
+React + Nginx ──► FastAPI ──► PostgreSQL
+                         │
+                         ├── /health and /ready
+                         └── /metrics
+
+GitHub Actions ──► test + secret scan + image scan ──► GHCR ──► Helm / Kubernetes
+Terraform ─────────────────────────────────────────────────────► AWS VPC + EC2 (k3s)
 ```
 
-## Run It Locally
+## Technology
+
+| Area | Tools |
+| --- | --- |
+| Frontend | React, Vite, Nginx |
+| API | FastAPI, Pydantic, SQLAlchemy |
+| Data | PostgreSQL 16, Alembic |
+| Local environment | Docker Compose |
+| CI/CD | GitHub Actions, GitHub Container Registry |
+| Security | secret scan, Trivy image scanning |
+| Kubernetes | Helm, k3s / Kind, Ingress, HPA |
+| Observability | Prometheus metrics, Grafana-ready scrape config |
+| Infrastructure | Terraform, AWS VPC and EC2 |
+
+## Quick start
+
+### Prerequisites
+
+- Docker Engine with Docker Compose v2
+- Optional for development: Python 3.12+ and Node.js 22+
+
+### Run the full stack
 
 ```bash
-docker compose up -d --build
-curl -s http://localhost:8000/health
+git clone https://github.com/Musharraf1128/hey-appoint.git
+cd hey-appoint
+docker compose up --build
 ```
 
-Frontend at http://localhost:3000, API docs at
-http://localhost:8000/docs. Backend tests (sqlite, no database needed):
+Open the following endpoints:
+
+| Service | Address |
+| --- | --- |
+| Web dashboard | http://localhost:3000 |
+| API documentation | http://localhost:8000/docs |
+| Health check | http://localhost:8000/health |
+| Metrics | http://localhost:8000/metrics |
+
+Stop the stack with `docker compose down`. Add `-v` only when you intentionally want to remove the local database volume.
+
+## Validate the application
+
+Run the backend test suite without Docker:
 
 ```bash
 cd backend
-alembic upgrade head   # DATABASE_URL=sqlite:///./test.db first run
-pytest -v
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pytest -q
 ```
 
-## Pipeline
+Build the frontend:
 
-`HeyAppoint CI/CD` runs on every push to `main`:
+```bash
+cd frontend
+npm ci
+npm run build
+```
 
-1. **test** — backend pytest + frontend `npm run build`
-2. **secret-scan** — blocks leaked tokens, keys, and credential files
-3. **build-scan-push** — builds both images, Trivy-scans them
-   (HIGH/CRITICAL, report-only), pushes to GHCR with sha tags
-4. **deploy** — ephemeral Kind cluster in CI, Helm install, rollout
-   check, live curl against the API
+## API overview
 
-Each stage gates the next through `needs:` — a red scan never ships.
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/health` | Liveness check |
+| `GET` | `/ready` | Database readiness check |
+| `GET` | `/api/doctors` | List available doctors |
+| `GET` | `/api/appointments` | List appointments |
+| `POST` | `/api/appointments` | Create an appointment |
+| `PUT` | `/api/appointments/{id}` | Update appointment status |
+| `DELETE` | `/api/appointments/{id}` | Cancel an appointment |
+| `GET` | `/api/stats` | Dashboard counts |
+| `GET` | `/metrics` | Prometheus metrics |
 
-## AWS Deployment
+## CI/CD pipeline
+
+The **HeyAppoint CI/CD** workflow runs on pull requests and pushes to `main`.
+
+1. Runs backend tests and builds the frontend.
+2. Scans the repository for common credential patterns.
+3. Builds backend and frontend container images, then scans them with Trivy.
+4. Publishes versioned images to GitHub Container Registry.
+5. On `main`, creates an ephemeral Kind cluster, deploys with Helm, waits for the rollout, and checks the live API.
+
+Each stage is gated by its dependencies, so a failed test or scan prevents deployment.
+
+## Kubernetes deployment
+
+The Helm chart is in [`helm/appoint`](helm/appoint). It deploys the frontend, backend, PostgreSQL, Ingress resources, and a backend HPA.
+
+```bash
+kubectl apply -f k8s/namespace.yaml
+helm upgrade --install appoint ./helm/appoint \
+  --namespace appoint \
+  --create-namespace
+
+kubectl get pods -n appoint
+kubectl port-forward service/appoint-backend -n appoint 8000:80
+```
+
+Then visit http://localhost:8000/docs. To exercise autoscaling, run `./scripts/load-test.sh` and inspect `kubectl get hpa -n appoint`.
+
+## AWS infrastructure
+
+Terraform provisions a small, disposable demo environment in AWS: a VPC, public subnet, internet gateway, route table, security group, and an Ubuntu EC2 node configured for k3s.
 
 ```bash
 cd terraform
 terraform init
-terraform apply        # VPC + EC2 (k3s via user data), ~5 min
-terraform output       # note the public IP
+terraform apply
+terraform output
 ```
 
-On the instance (EC2 Instance Connect, no SSH keys needed):
+Before creating resources, configure AWS credentials for the target account and review the plan carefully. The default region is `ap-south-1` and the default instance type is `t3.micro`; both are configurable in `terraform/terraform.tfvars`.
+
+### Tear down
+
+Destroy the entire Terraform-managed environment as soon as the demo is complete:
 
 ```bash
-git clone https://github.com/Musharraf1128/hey-appoint.git
-export KUBECONFIG=~/.kube/config
-helm upgrade --install appoint ./hey-appoint/helm/appoint \
-  -n appoint --create-namespace
-kubectl get pods -n appoint
-```
-
-Tear everything down the same day — EC2 bills by the hour:
-
-```bash
+cd terraform
 terraform destroy
 ```
 
-## Monitoring & Troubleshooting
+This is the preferred cleanup method because it removes both the EC2 instance and the supporting network resources tracked in Terraform state.
 
-- `GET /metrics` exposes Prometheus counters (request volume, latency).
-- HPA scales backend 2–5 replicas at 50% CPU; generate load with
-  `./scripts/load-test.sh`.
-- Finale demo: `troubleshooting/broken-image.yaml` sends pods to
-  `ImagePullBackOff`, fixed with `kubectl rollout undo`; the broken
-  service manifest empties endpoints until the Helm values are
-  re-applied. Both recoveries are part of the recorded walkthrough.
+## Observability and troubleshooting
+
+- The API exports Prometheus metrics at `/metrics`; the scrape configuration is in [`monitoring/prometheus.yml`](monitoring/prometheus.yml).
+- The deployment includes liveness and readiness endpoints for operational checks.
+- [`troubleshooting/broken-image.yaml`](troubleshooting/broken-image.yaml) reproduces an `ImagePullBackOff` scenario.
+- [`troubleshooting/broken-service.yaml`](troubleshooting/broken-service.yaml) reproduces a service-selector issue.
+
+## Repository structure
+
+```text
+.
+├── backend/          FastAPI application, migrations, and tests
+├── frontend/         React dashboard and Nginx configuration
+├── helm/appoint/     Helm chart for Kubernetes deployment
+├── k8s/              Namespace bootstrap manifest
+├── monitoring/       Prometheus scrape configuration
+├── scripts/          Demo load-test helper
+├── terraform/        AWS infrastructure as code
+├── troubleshooting/  Intentional failure manifests for debugging practice
+└── .github/workflows CI/CD pipeline
+```
+
+## Demo checklist
+
+1. Start the local stack and show the dashboard.
+2. Create an appointment, confirm it, then show the dashboard counts change.
+3. Attempt the same doctor/date/time slot and show the duplicate-booking protection.
+4. Run the test suite or show the green GitHub Actions workflow.
+5. Show the Helm resources and API health check.
+6. Optionally demonstrate one troubleshooting manifest and its recovery.
+
+## License
+
+This project is provided for educational and portfolio use.
