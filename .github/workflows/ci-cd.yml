@@ -91,8 +91,14 @@ jobs:
             --set frontend.image=ghcr.io/musharraf1128/hey-appoint-frontend
       - name: Check rollout
         run: |
-          kubectl rollout status deployment/appoint-backend -n appoint --timeout=120s
+          kubectl rollout status deployment/appoint-backend -n appoint --timeout=240s
           kubectl get pods -n appoint
+      - name: Dump debug info
+        if: failure()
+        run: |
+          kubectl get pods -n appoint -o wide
+          kubectl describe pods -n appoint -l app=appoint-backend | tail -30
+          kubectl logs -n appoint -l app=appoint-backend --tail=20 || true
       - name: Verify API in CI
         run: |
           kubectl port-forward service/appoint-backend -n appoint 8000:80 &
