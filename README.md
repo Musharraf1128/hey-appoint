@@ -175,7 +175,7 @@ Before creating resources, configure AWS credentials for the target account and 
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-The default region is `ap-south-1`; the default worker type is `t3.medium`. EKS creates billable resources, so apply only when ready to perform the live Kubernetes demonstration.
+The default region is `ap-south-1`; the default worker type is `t3.micro`. EKS creates billable resources, so apply only when ready to perform the live Kubernetes demonstration.
 
 After apply, configure local Kubernetes access with the output command:
 
