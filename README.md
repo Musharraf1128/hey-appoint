@@ -14,8 +14,7 @@ EKS. Captured evidence is displayed in [`submission/README.md`](submission/READM
 ### Video walkthrough
 
 Upload the walkthrough to YouTube, replace `YOUTUBE_VIDEO_ID` below with the
-video ID, and keep the linked thumbnail. The full narration and command setup
-are in [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md).
+video ID, and keep the linked thumbnail.
 
 [![Watch the HeyAppoint walkthrough](https://img.youtube.com/vi/YOUTUBE_VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=YOUTUBE_VIDEO_ID)
 
