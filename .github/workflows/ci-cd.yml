@@ -52,26 +52,26 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build images
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/hey-appoint-backend:${{ github.sha }} ./backend
-          docker build -t ghcr.io/${{ github.repository_owner }}/hey-appoint-frontend:${{ github.sha }} ./frontend
+          docker build -t ghcr.io/musharraf1128/hey-appoint-backend:${{ github.sha }} ./backend
+          docker build -t ghcr.io/musharraf1128/hey-appoint-frontend:${{ github.sha }} ./frontend
       - name: Scan backend image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/hey-appoint-backend:${{ github.sha }}
+          image-ref: ghcr.io/musharraf1128/hey-appoint-backend:${{ github.sha }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '0'
       - name: Scan frontend image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/hey-appoint-frontend:${{ github.sha }}
+          image-ref: ghcr.io/musharraf1128/hey-appoint-frontend:${{ github.sha }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '0'
       - name: Push images
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/hey-appoint-backend:${{ github.sha }}
-          docker push ghcr.io/${{ github.repository_owner }}/hey-appoint-frontend:${{ github.sha }}
+          docker push ghcr.io/musharraf1128/hey-appoint-backend:${{ github.sha }}
+          docker push ghcr.io/musharraf1128/hey-appoint-frontend:${{ github.sha }}
   deploy:
     if: github.ref == 'refs/heads/main'
     needs: build-scan-push
@@ -87,8 +87,8 @@ jobs:
           helm upgrade --install appoint ./helm/appoint -n appoint --create-namespace \
             --set backend.tag=${{ github.sha }} \
             --set frontend.tag=${{ github.sha }} \
-            --set backend.image=ghcr.io/${{ github.repository_owner }}/hey-appoint-backend \
-            --set frontend.image=ghcr.io/${{ github.repository_owner }}/hey-appoint-frontend
+            --set backend.image=ghcr.io/musharraf1128/hey-appoint-backend \
+            --set frontend.image=ghcr.io/musharraf1128/hey-appoint-frontend
       - name: Check rollout
         run: |
           kubectl rollout status deployment/appoint-backend -n appoint --timeout=120s
