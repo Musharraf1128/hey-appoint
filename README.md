@@ -122,6 +122,10 @@ The **HeyAppoint CI/CD** workflow runs on pull requests and pushes to `main`.
 
 Each stage is gated by its dependencies, so a failed test or scan prevents deployment.
 
+### Security gate
+
+Trivy scans both built container images for operating-system and Python package vulnerabilities. The pipeline blocks a release when it finds a fixable HIGH or CRITICAL issue. For example, the project upgraded FastAPI and its Prometheus instrumentation dependency to resolve the Starlette HIGH-severity denial-of-service findings reported by Trivy; the refreshed image resolves Starlette `1.8.0`.
+
 ## Kubernetes deployment
 
 The Helm chart is in [`helm/appoint`](helm/appoint). It deploys the frontend, backend, PostgreSQL, Ingress resources, and a backend HPA.
