@@ -4,12 +4,12 @@ An end-to-end clinic appointment platform built to demonstrate a practical DevOp
 
 [![CI/CD](https://github.com/Musharraf1128/hey-appoint/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/Musharraf1128/hey-appoint/actions/workflows/ci-cd.yml)
 
-## Demo
+## Live demonstration
 
-> Add the recorded walkthrough after publishing it:
-> `https://www.youtube.com/watch?v=VIDEO_ID`
-
-[![Watch the HeyAppoint demo](https://img.youtube.com/vi/VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+The project is designed for a short live walkthrough: book and manage an
+appointment locally, show the green CI/CD run and SHA-tagged GHCR images, then
+demonstrate the Helm release, Ingress, Prometheus target, and Grafana panel in
+EKS. Captured evidence is displayed in [`submission/README.md`](submission/README.md).
 
 ## Highlights
 
@@ -33,7 +33,7 @@ React + Nginx ──► FastAPI ──► PostgreSQL
                          └── /metrics
 
 GitHub Actions ──► test + secret scan + image scan ──► GHCR ──► Helm / Kubernetes
-Terraform ─────────────────────────────────────────────────────► AWS VPC + EC2 (k3s)
+Terraform ─────────────────────────────────────────────────────► AWS VPC + EKS managed node group
 ```
 
 ## Technology
@@ -46,9 +46,9 @@ Terraform ───────────────────────�
 | Local environment | Docker Compose |
 | CI/CD | GitHub Actions, GitHub Container Registry |
 | Security | secret scan, Trivy image scanning with HIGH/CRITICAL release gate |
-| Kubernetes | Helm, k3s / Kind, Ingress, HPA |
-| Observability | Prometheus metrics, Grafana-ready scrape config |
-| Infrastructure | Terraform, AWS VPC and EC2 |
+| Kubernetes | Helm, EKS / Kind, Ingress, HPA |
+| Observability | Prometheus metrics, ServiceMonitor, Grafana dashboard |
+| Infrastructure | Terraform, AWS VPC and EKS |
 
 ## Quick start
 
@@ -130,25 +130,41 @@ Trivy scans both built container images for operating-system and Python package 
 
 The Helm chart is in [`helm/appoint`](helm/appoint). It deploys the frontend, backend, PostgreSQL, Ingress resources, and a backend HPA.
 
+For an EKS demo, install an NGINX Ingress controller first. Its LoadBalancer is placed in the public subnets created by Terraform.
+
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx --create-namespace
+kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=10m
+```
+
+Get the controller hostname, then deploy HeyAppoint with a browser-resolvable hostname. `nip.io` avoids editing local DNS for the demonstration.
+
 ```bash
 kubectl apply -f k8s/namespace.yaml
+INGRESS_HOST=$(kubectl get svc ingress-nginx-controller -n ingress-nginx \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
 helm upgrade --install appoint ./helm/appoint \
   --namespace appoint \
-  --create-namespace
+  --create-namespace \
+  --set host="${INGRESS_HOST}.nip.io"
 
 kubectl get pods -n appoint
 kubectl port-forward service/appoint-backend -n appoint 8000:80
 ```
 
-Then visit http://localhost:8000/docs. To exercise autoscaling, run `./scripts/load-test.sh` and inspect `kubectl get hpa -n appoint`.
+Open `http://${INGRESS_HOST}.nip.io` for the Ingress-backed application, or visit http://localhost:8000/docs while port-forwarding. To exercise autoscaling, run `./scripts/load-test.sh` and inspect `kubectl get hpa -n appoint`.
 
 ## AWS infrastructure
 
-Terraform provisions a small, disposable demo environment in AWS: a VPC, public subnet, internet gateway, route table, security group, and an Ubuntu EC2 node configured for k3s.
+Terraform provisions a disposable EKS demo environment in AWS: a VPC, two public subnets in separate Availability Zones, an internet gateway, an EKS control plane, and a managed worker-node group.
 
 ```bash
 cd terraform
 terraform init
+terraform plan
 terraform apply
 terraform output
 ```
@@ -159,7 +175,13 @@ Before creating resources, configure AWS credentials for the target account and 
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-The default region is `ap-south-1` and the default instance type is `t3.micro`.
+The default region is `ap-south-1`; the default worker type is `t3.medium`. EKS creates billable resources, so apply only when ready to perform the live Kubernetes demonstration.
+
+After apply, configure local Kubernetes access with the output command:
+
+```bash
+terraform output -raw configure_kubectl | sh
+```
 
 ### Tear down
 
@@ -170,11 +192,11 @@ cd terraform
 terraform destroy
 ```
 
-This is the preferred cleanup method because it removes both the EC2 instance and the supporting network resources tracked in Terraform state.
+This is the required cleanup method because it removes the EKS cluster, worker nodes, and supporting network resources tracked in Terraform state.
 
 ## Observability and troubleshooting
 
-- The API exports Prometheus metrics at `/metrics`; the scrape configuration is in [`monitoring/prometheus.yml`](monitoring/prometheus.yml).
+- The API exports Prometheus metrics at `/metrics`. For EKS, install the included Prometheus/Grafana stack configuration and dashboard using [`monitoring/README.md`](monitoring/README.md), then enable the chart's `ServiceMonitor`.
 - The deployment includes liveness and readiness endpoints for operational checks.
 - [`troubleshooting/broken-image.yaml`](troubleshooting/broken-image.yaml) reproduces an `ImagePullBackOff` scenario.
 - [`troubleshooting/broken-service.yaml`](troubleshooting/broken-service.yaml) reproduces a service-selector issue.

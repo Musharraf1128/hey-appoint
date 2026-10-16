@@ -10,6 +10,10 @@ services:
 
   backend:
     build: ./backend
+    networks:
+      default:
+        aliases:
+          - appoint-backend
     environment:
       DATABASE_URL: postgresql+psycopg://clinic:clinic@postgres:5432/clinic
     depends_on:

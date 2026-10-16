@@ -7,7 +7,13 @@ backend:
 frontend:
   image: ghcr.io/musharraf1128/hey-appoint-frontend
   tag: latest
-  replicas: 1
+  replicas: 2
   port: 8080
 
 host: appoint.local
+
+monitoring:
+  # Enable only after kube-prometheus-stack is installed in the cluster.
+  serviceMonitor:
+    enabled: false
+    interval: 15s
