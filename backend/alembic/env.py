@@ -9,7 +9,10 @@ from app import models  # noqa: F401  (registers tables)
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    try:
+        fileConfig(config.config_file_name)
+    except KeyError:
+        pass  # minimal alembic.ini without logging sections
 
 db_url = os.getenv("DATABASE_URL")
 if db_url:
