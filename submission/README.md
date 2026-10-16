@@ -40,7 +40,12 @@
 | --- | --- | --- |
 | ![Application through Ingress](screenshots/23-ingress-application.png) | ![Prometheus target is up](screenshots/24-prometheus-target-up.png) | ![Grafana API dashboard](screenshots/26-grafana-dashboard.png) |
 
-## AWS evidence to add after the live EKS demonstration
+## AWS and teardown evidence
 
-Add the AWS Console VPC, public-subnets, EKS-cluster, managed-node-group, and
-final Terraform-destroy screenshots here after the paid demo is complete.
+| VPC | Public subnets | EKS cluster |
+| --- | --- | --- |
+| ![AWS VPC](screenshots/16-aws-vpc.png) | ![AWS public subnets](screenshots/17-aws-public-subnets.png) | ![AWS EKS cluster](screenshots/18-aws-eks-cluster.png) |
+
+| Managed node group | Terraform destroy |
+| --- | --- |
+| ![AWS EKS node group](screenshots/19-aws-eks-node-group.png) | ![Terraform destroy complete](screenshots/27-terraform-destroy.png) |
