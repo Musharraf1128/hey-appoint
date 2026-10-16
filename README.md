@@ -13,10 +13,10 @@ EKS. Captured evidence is displayed in [`submission/README.md`](submission/READM
 
 ### Video walkthrough
 
-Upload the walkthrough to YouTube, replace `YOUTUBE_VIDEO_ID` below with the
-video ID, and keep the linked thumbnail.
+The complete walkthrough is included directly in the repository under `demo/`.
+Click the preview image to download or open the recording:
 
-[![Watch the HeyAppoint walkthrough](https://img.youtube.com/vi/YOUTUBE_VIDEO_ID/hqdefault.jpg)](https://www.youtube.com/watch?v=YOUTUBE_VIDEO_ID)
+[![Watch the HeyAppoint walkthrough](submission/screenshots/03-local-dashboard.png)](demo/heyappoint-demo.mkv)
 
 ## Highlights
 
