@@ -8,6 +8,6 @@ frontend:
   image: ghcr.io/musharraf1128/hey-appoint-frontend
   tag: latest
   replicas: 1
-  port: 80
+  port: 8080
 
 host: appoint.local

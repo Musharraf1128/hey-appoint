@@ -1,0 +1,4 @@
+# Copy this file to terraform.tfvars and adjust values for your AWS account.
+# Do not commit terraform.tfvars or AWS credentials.
+aws_region    = "ap-south-1"
+instance_type = "t3.micro"

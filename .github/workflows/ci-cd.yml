@@ -60,14 +60,14 @@ jobs:
           image-ref: ghcr.io/musharraf1128/hey-appoint-backend:${{ github.sha }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
-          exit-code: '0'
+          exit-code: '1'
       - name: Scan frontend image
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ghcr.io/musharraf1128/hey-appoint-frontend:${{ github.sha }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
-          exit-code: '0'
+          exit-code: '1'
       - name: Push images
         run: |
           docker push ghcr.io/musharraf1128/hey-appoint-backend:${{ github.sha }}

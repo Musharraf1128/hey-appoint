@@ -6,6 +6,7 @@ dist/
 *.tfstate
 *.tfstate.*
 .terraform/
+terraform/terraform.tfvars
 crash.log
 .env
 *.db

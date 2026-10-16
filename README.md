@@ -45,7 +45,7 @@ Terraform ───────────────────────�
 | Data | PostgreSQL 16, Alembic |
 | Local environment | Docker Compose |
 | CI/CD | GitHub Actions, GitHub Container Registry |
-| Security | secret scan, Trivy image scanning |
+| Security | secret scan, Trivy image scanning with HIGH/CRITICAL release gate |
 | Kubernetes | Helm, k3s / Kind, Ingress, HPA |
 | Observability | Prometheus metrics, Grafana-ready scrape config |
 | Infrastructure | Terraform, AWS VPC and EC2 |
@@ -116,7 +116,7 @@ The **HeyAppoint CI/CD** workflow runs on pull requests and pushes to `main`.
 
 1. Runs backend tests and builds the frontend.
 2. Scans the repository for common credential patterns.
-3. Builds backend and frontend container images, then scans them with Trivy.
+3. Builds backend and frontend container images, then scans them with Trivy. HIGH or CRITICAL findings fail the release gate.
 4. Publishes versioned images to GitHub Container Registry.
 5. On `main`, creates an ephemeral Kind cluster, deploys with Helm, waits for the rollout, and checks the live API.
 
@@ -149,7 +149,13 @@ terraform apply
 terraform output
 ```
 
-Before creating resources, configure AWS credentials for the target account and review the plan carefully. The default region is `ap-south-1` and the default instance type is `t3.micro`; both are configurable in `terraform/terraform.tfvars`.
+Before creating resources, configure AWS credentials for the target account and review the plan carefully. Start from the committed example and keep local values out of Git:
+
+```bash
+cp terraform.tfvars.example terraform.tfvars
+```
+
+The default region is `ap-south-1` and the default instance type is `t3.micro`.
 
 ### Tear down
 
